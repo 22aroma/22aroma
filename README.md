@@ -5,7 +5,7 @@
 </p>
 
 <p>
-  Git · CI/CD · <span style="color: #d73a49">Pylint 9.99</span> · <span style="color: #28a745">100% test coverage</span>
+  Git · CI/CD · <span style="color: #d73a49">Pylint 9.99</span> · <span style="color: #28a745">90% test coverage</span>
 </p>
 
 <p>
