@@ -1,16 +1,13 @@
-## Hi there 👋
+<h1>Vostretsov Roman · <span style="color: #2ea043">Full Stack Python developer</span></h1>
 
-<!--
-**22aroma/22aroma** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+<p>
+  Web · Desktop · Telegram bots · <span style="color: #f0ad4e">Linux</span> · <span style="color: #0366d6">Servers</span>
+</p>
 
-Here are some ideas to get you started:
+<p>
+  Git · CI/CD · <span style="color: #d73a49">Pylint 9.99</span> · <span style="color: #28a745">100% test coverage</span>
+</p>
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+<p>
+  🔗 Telegram: <a href="https://t.me/apchihuh">@apchihuh</a>
+</p>
