@@ -1,0 +1,47 @@
+name: Snake
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Generate contribution snake
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate snake animations
+        uses: Platane/snk@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake.svg
+            dist/snake-dark.svg
+            dist/snake-gif.svg
+            dist/snake-gif-dark.svg
+
+      - name: Move to assets
+        run: |
+          mkdir -p assets/snake
+          cp dist/snake.svg      assets/snake/snake.svg
+          cp dist/snake-dark.svg assets/snake/snake-dark.svg
+
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/snake
+          if git diff --staged --quiet; then
+            echo 'nothing to commit'
+          else
+            git commit -m 'chore: обновление анимации графика [skip ci]'
+            git push
+          fi
