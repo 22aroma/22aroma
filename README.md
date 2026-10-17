@@ -10,7 +10,6 @@
   <a href="https://github.com/22aroma"><img src="https://img.shields.io/badge/22aroma-b18cff?style=for-the-badge&logo=github&logoColor=white" alt="22aroma"></a>
   <a href="https://t.me/apchihuh"><img src="https://img.shields.io/badge/Telegram-2AABEE?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a>
   <a href="https://discord.com/users/22aroma"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="mailto:vr_roman7@mail.ru"><img src="https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"></a>
 </p>
 
 <p align="center">
