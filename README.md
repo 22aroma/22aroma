@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=26&pause=0&speed=30&color=FF7AA2,B18CFF,6EE7F9&center=true&vCenter=true&multiline=true&width=700&height=80&lines=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%2C%20%D1%8F%2022aroma%20%F0%9F%98%BA;full-stack%20%26%20%D0%B4%D0%B8%D0%B7%D0%B0%D0%B9%D0%BD" alt="Привет, я 22aroma">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=26&pause=0&speed=30&color=FF7AA2,B18CFF,6EE7F9&center=true&vCenter=true&multiline=true&width=700&height=80&lines=Hi%2C%20I%27m%2022aroma%20%F0%9F%98%BA;full-stack%20%26%20design" alt="Hi, I'm 22aroma">
 </p>
 
 <p align="center">
