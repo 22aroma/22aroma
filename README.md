@@ -38,19 +38,26 @@
   <img src="assets/sec-stack.png" alt="Стек">
 </p>
 
-<p align="center">
-  <img src="https://skillicons.dev/icons?i=html,css,js&theme=dark&perline=10" alt="Frontend">
-  <br>
-  <img src="https://skillicons.dev/icons?i=python,nodejs,django,rust,telegram&theme=dark&perline=10" alt="Backend">
-  <br>
-  <img src="https://skillicons.dev/icons?i=docker,linux,redis,git,github,pylint,pytest&theme=dark&perline=10" alt="Instruments">
-</p>
-
-<p align="center">
-  <sub><b>Frontend</b> · HTML, CSS, JavaScript<br>
-  <b>Backend</b> · Python, Node.js, Django, Rust, Telegram<br>
-  <b>Instruments</b> · Docker, Linux, Redis, Git, GitHub, Pylint, Pytest</sub>
-</p>
+<table align="center">
+  <tr>
+    <td align="right" valign="middle"><b>Frontend</b><br><sub>HTML · CSS · JavaScript</sub></td>
+    <td valign="middle">
+      <img src="https://skillicons.dev/icons?i=html,css,js&theme=dark&perline=10" alt="Frontend">
+    </td>
+  </tr>
+  <tr>
+    <td align="right" valign="middle"><b>Backend</b><br><sub>Python · Node.js · Django · Rust · Telegram</sub></td>
+    <td valign="middle">
+      <img src="https://skillicons.dev/icons?i=python,nodejs,django,rust,telegram&theme=dark&perline=10" alt="Backend">
+    </td>
+  </tr>
+  <tr>
+    <td align="right" valign="middle"><b>Instruments</b><br><sub>Docker · Linux · Redis · Git, GitHub, Pylint, Pytest</sub></td>
+    <td valign="middle">
+      <img src="https://skillicons.dev/icons?i=docker,linux,redis,git,github,pylint,pytest&theme=dark&perline=10" alt="Instruments">
+    </td>
+  </tr>
+</table>
 
 <p align="center">
   <img src="assets/divider.png" alt="">

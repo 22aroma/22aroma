@@ -251,71 +251,58 @@ $G.DrawPath([System.Drawing.Pen]::new((Solid 44 ([System.Drawing.Color]::White))
 Save-Png $Bmp $G 'header.png'
 
 # =====================================================================
-#  3. Разделитель: тонкая линия + кластер из трёх точек
+#  3. Разделитель: линии гаснут к краям, в центре — три светящиеся точки
 # =====================================================================
 Write-Host 'Разделитель'
 $DW = 560; $DH = 44; $midX = $DW / 2
 New-Canvas $DW $DH
 $lineY = 22
-$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $midX - 46, 2)) @((Solid 0 $C.Violet), $C.Violet) 0), 0, $lineY - 1, $midX - 46, 2)
-$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($midX + 46, 0, $midX - 46, 2)) @($C.Pink, (Solid 0 $C.Pink)) 0), $midX + 46, $lineY - 1, $midX - 46, 2)
 
-$dots = @(@(-40, $C.Violet, 5), @(-20, $C.Pink, 7), @(0, $C.Cyan, 5))
+# точки: симметричный кластер вокруг центра
+$dots = @(@(-17, $C.Violet, 5), @(0, $C.Pink, 7), @(17, $C.Cyan, 5))
 foreach ($d in $dots) {
     $dx = $midX + $d[0]; $col = $d[1]; $r = $d[2]
     Add-Glow $G $dx $lineY ($r * 3.4) $col 110
     $G.FillEllipse([System.Drawing.SolidBrush]::new($col), ($dx - $r), ($lineY - $r), $r * 2, $r * 2)
     $G.FillEllipse([System.Drawing.SolidBrush]::new([System.Drawing.Color]::White), ($dx - 2), ($lineY - 2), 4, 4)
 }
+
+# линии: одинаковый отступ от кластера, справа — в цвет голубой точки
+$gapX = 14
+$dotL = $midX - 17 - 17; $dotR = $midX + 17 + 17
+$lEnd = $dotL - $gapX
+$rStart = $dotR + $gapX
+$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $lEnd, 2)) @((Solid 0 $C.Violet), $C.Violet) 0), 0, $lineY - 1, $lEnd, 2)
+$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($rStart, 0, $DW - $rStart, 2)) @($C.Cyan, (Solid 0 $C.Cyan)) 0), $rStart, $lineY - 1, ($DW - $rStart), 2)
 Save-Png $Bmp $G 'divider.png'
 
 # =====================================================================
-#  4. Заголовки секций: неоновая скобка + текст + уходящая в никуда линия
+#  4. Заголовки секций: минимализм — короткое тире + название
 # =====================================================================
 Write-Host 'Заголовки секций'
 $sections = [ordered]@{
     'sec-about.png' = @('ОБО МНЕ', $C.Pink)
     'sec-stack.png' = @('СТЕК',    $C.Violet)
 }
-$secFont  = [System.Drawing.Font]::new('Segoe UI Semibold', 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-$secTrack = 8
+$secFont  = [System.Drawing.Font]::new('Segoe UI Semibold', 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$secTrack = 9
 
 foreach ($name in $sections.Keys) {
     $text   = $sections[$name][0]
     $accent = $sections[$name][1]
 
-    # поля холста, чтобы свечение не обрезалось краями картинки
-    $padL = 46; $padR = 46; $padT = 36; $padB = 36
-    $barW = 9; $barH = 48; $gapBar = 24; $gapLine = 26; $lineW = 300
-    $contentH = 84
-
+    $dashW = 22; $dashH = 2; $gapDash = 17; $padR = 3
+    $contentH = 46
     $tw = Measure-Text $text $secFont $secTrack
-    $sw = [int]($barW + $gapBar + $tw + $gapLine + $lineW + $padL + $padR)
-    $sh = $contentH + $padT + $padB
-    New-Canvas $sw $sh
+    $sw = [int]($dashW + $gapDash + $tw + $padR)
+    New-Canvas $sw $contentH
 
-    $barX = $padL
-    $barY = $padT + ($contentH - $barH) / 2
-    Add-GlowRect $G ($barX - 2) ($barY - 2) ($barW + 4) ($barH + 4) $accent 210 30 30
-    $bar = New-RoundRect $barX $barY $barW $barH 4.5
-    $G.FillPath((New-MultiBrush ([System.Drawing.Rectangle]::new($barX, $barY, $barW, $barH)) @($accent, (Solid 140 $C.Violet)) 90), $bar)
-    $G.FillRectangle([System.Drawing.SolidBrush]::new((Solid 210 ([System.Drawing.Color]::White))), ($barX + 1), ($barY + 7), 2, ($barH - 14))
+    # короткое тире
+    $dashY = [int](($contentH - $dashH) / 2)
+    $G.FillRectangle([System.Drawing.SolidBrush]::new($accent), 0, $dashY, $dashW, $dashH)
 
-    $textX = $barX + $barW + $gapBar
-    $textY = $padT + ($contentH - 46) / 2
-    $tb = New-MultiBrush ([System.Drawing.Rectangle]::new($textX, 0, $tw + 20, $sh)) @($C.Text, [System.Drawing.Color]::White, $accent) 0
-    Draw-Tracked $G $text $secFont $tb $textX $textY $secTrack | Out-Null
-
-    $lineX = $textX + $tw + $gapLine
-    $lineY2 = $padT + $contentH / 2
-    $G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($lineX, 0, $lineW, 2)) @($accent, (Solid 0 $accent)) 0), $lineX, ($lineY2 - 1), $lineW, 2)
-
-    $dia = [System.Drawing.Drawing2D.GraphicsPath]::new()
-    $dx = $lineX + $lineW
-    $dia.AddPolygon(@(
-        [System.Drawing.PointF]::new($dx - 5, $lineY2), [System.Drawing.PointF]::new($dx, $lineY2 - 5),
-        [System.Drawing.PointF]::new($dx + 5, $lineY2), [System.Drawing.PointF]::new($dx, $lineY2 + 5)))
-    $G.FillPath([System.Drawing.SolidBrush]::new((Solid 190 $accent)), $dia)
+    # название — ровный белый, без градиентов и свечений
+    Draw-Tracked $G $text $secFont ([System.Drawing.SolidBrush]::new($C.Text)) ($dashW + $gapDash) 5 $secTrack | Out-Null
 
     Save-Png $Bmp $G $name
 }
