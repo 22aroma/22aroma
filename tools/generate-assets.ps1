@@ -62,6 +62,28 @@ function Add-Glow($g, [single]$cx, [single]$cy, [single]$r, $color, [int]$alpha)
     }
 }
 
+# мягкое свечение вокруг полоски/«искры»: попиксельное затухание, без швов
+function Add-GlowRect($g, [single]$x, [single]$y, [single]$w, [single]$h, $color, [int]$alpha, [int]$padX = 30, [int]$padY = 18) {
+    $gw = [int]$w + $padX * 2
+    $gh = [int]$h + $padY * 2
+    if ($gw -lt 2 -or $gh -lt 2) { return }
+    $bmp = [System.Drawing.Bitmap]::new($gw, $gh, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $cx = ($gw - 1) / 2; $cy = ($gh - 1) / 2
+    for ($py = 0; $py -lt $gh; $py++) {
+        $dy = ($py - $cy) / $cy
+        $fy = [Math]::Pow([Math]::Max(0.0, 1 - $dy * $dy), 1.7)
+        if ($fy -le 0.003) { continue }
+        for ($px = 0; $px -lt $gw; $px++) {
+            $dx = ($px - $cx) / $cx
+            $fx = [Math]::Pow([Math]::Max(0.0, 1 - $dx * $dx), 2.1)
+            $a  = [int]($alpha * $fx * $fy)
+            if ($a -gt 0) { $bmp.SetPixel($px, $py, [System.Drawing.Color]::FromArgb($a, $color.R, $color.G, $color.B)) }
+        }
+    }
+    $g.DrawImage($bmp, ([int]$x - $padX), ([int]$y - $padY), $gw, $gh)
+    $bmp.Dispose()
+}
+
 # градиент из нескольких цветов
 function New-MultiBrush($rect, $colors, [single]$angle) {
     $br = [System.Drawing.Drawing2D.LinearGradientBrush]::new($rect, $colors[0], $colors[-1], $angle)
@@ -78,8 +100,8 @@ function New-MultiBrush($rect, $colors, [single]$angle) {
     return $br
 }
 
-$Typo     = [System.Drawing.StringFormat]::GenericTypographic
-$BigArea  = [System.Drawing.SizeF]::new(40000, 40000)
+$Typo    = [System.Drawing.StringFormat]::GenericTypographic
+$BigArea = [System.Drawing.SizeF]::new(40000, 40000)
 
 # текст с трекингом (letter-spacing); возвращает занятую ширину
 function Draw-Tracked($g, [string]$text, $font, $brush, [single]$x, [single]$y, [single]$track = 0) {
@@ -94,6 +116,16 @@ function Measure-Tracked($g, [string]$text, $font, [single]$track = 0) {
     $w = 0.0
     foreach ($ch in $text.ToCharArray()) { $w += $g.MeasureString([string]$ch, $font, $BigArea, $Typo).Width + $track }
     return [Math]::Max(0.0, $w - $track)
+}
+
+# измерить текст на отдельном холсте
+function Measure-Text([string]$text, $font, [single]$track = 0) {
+    $bmp = [System.Drawing.Bitmap]::new(8, 8)
+    $g   = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
+    $w = Measure-Tracked $g $text $font $track
+    $g.Dispose(); $bmp.Dispose()
+    return $w
 }
 
 function Save-Png($bmp, $g, [string]$name) {
@@ -122,8 +154,8 @@ New-Canvas $ring $ring
 Add-Glow $G ($ring / 2) ($ring / 2) 250 $C.Pink 120
 Add-Glow $G ($ring / 2) ($ring / 2) 235 $C.Violet 75
 $G.FillEllipse([System.Drawing.SolidBrush]::new((Solid 22 ([System.Drawing.Color]::White))), 38, 38, $ring - 76, $ring - 76)
-$G.DrawEllipse([System.Drawing.Pen]::new((Solid 120 $C.Violet), 2),   16, 16, $ring - 32, $ring - 32)
-$G.DrawEllipse([System.Drawing.Pen]::new((Solid 220 $C.Pink), 3),    34, 34, $ring - 68, $ring - 68)
+$G.DrawEllipse([System.Drawing.Pen]::new((Solid 120 $C.Violet), 2),  16, 16, $ring - 32, $ring - 32)
+$G.DrawEllipse([System.Drawing.Pen]::new((Solid 220 $C.Pink), 3),   34, 34, $ring - 68, $ring - 68)
 $G.DrawImage($src, 50, 50, $ring - 100, $ring - 100)
 Save-Png $Bmp $G 'avatar.png'
 $src.Dispose()
@@ -132,17 +164,18 @@ $src.Dispose()
 #  2. Главный баннер
 # =====================================================================
 Write-Host 'Баннер'
-$W = 1400; $H = 470
+$W = 1400; $H = 440
 New-Canvas $W $H
 $panel = New-RoundRect 0 0 $W $H 34
 $G.SetClip($panel)
 
+# фон
 $G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $W, $H)) @($C.Bg1, $C.Bg2) 25), 0, 0, $W, $H)
 $G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $W, $H)) @((Solid 0 ([System.Drawing.Color]::White)), $C.Bg3) 100), 0, 0, $W, $H)
 
-Add-Glow $G 230  100 420 $C.Pink   95
-Add-Glow $G 1230 380 400 $C.Cyan   70
-Add-Glow $G 660  500 450 $C.Violet 80
+Add-Glow $G 220  90  400 $C.Pink   95
+Add-Glow $G 1240 350 380 $C.Cyan   70
+Add-Glow $G 640  470 430 $C.Violet 80
 
 # сетка точек
 $dot = [System.Drawing.SolidBrush]::new((Solid 22 ([System.Drawing.Color]::White)))
@@ -153,49 +186,57 @@ for ($x = 22; $x -lt $W; $x += 26) {
 # диагональные лучи света
 $ray = [System.Drawing.Drawing2D.GraphicsPath]::new()
 $ray.AddPolygon(@(
-    [System.Drawing.PointF]::new(-120, $H), [System.Drawing.PointF]::new(260, 0),
-    [System.Drawing.PointF]::new(470, 0),    [System.Drawing.PointF]::new(60, $H)))
+    [System.Drawing.PointF]::new(-120, $H), [System.Drawing.PointF]::new(250, 0),
+    [System.Drawing.PointF]::new(460, 0),    [System.Drawing.PointF]::new(50, $H)))
 $G.FillPath([System.Drawing.SolidBrush]::new((Solid 5 ([System.Drawing.Color]::White))), $ray)
 
-# --- текстовый блок ---
+# --- имя ---
 $nameFont = [System.Drawing.Font]::new('Segoe UI Black', 104, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-$tagFont  = [System.Drawing.Font]::new('Cascadia Code', 32, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $chipFont = [System.Drawing.Font]::new('Cascadia Mono SemiBold', 22, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
+$signFont = [System.Drawing.Font]::new('Cascadia Mono SemiBold', 22, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
 $nameW = $G.MeasureString('22aroma', $nameFont, $BigArea, $Typo).Width
-$nameBrush = New-MultiBrush ([System.Drawing.Rectangle]::new(104, 100, [int]$nameW + 4, 130)) @($C.Pink, $C.Violet, $C.Cyan) 0
+$nameBrush = New-MultiBrush ([System.Drawing.Rectangle]::new(104, 92, [int]$nameW + 4, 130)) @($C.Pink, $C.Violet, $C.Cyan) 0
 
 $shadow = [System.Drawing.SolidBrush]::new((Solid 45 $C.Pink))
-$G.DrawString('22aroma', $nameFont, $shadow,   [System.Drawing.PointF]::new(109, 106), $Typo)
-$G.DrawString('22aroma', $nameFont, $shadow,   [System.Drawing.PointF]::new(106, 103), $Typo)
-$G.DrawString('22aroma', $nameFont, $nameBrush, [System.Drawing.PointF]::new(104, 100), $Typo)
+$G.DrawString('22aroma', $nameFont, $shadow,    [System.Drawing.PointF]::new(109, 98), $Typo)
+$G.DrawString('22aroma', $nameFont, $shadow,    [System.Drawing.PointF]::new(106, 95), $Typo)
+$G.DrawString('22aroma', $nameFont, $nameBrush, [System.Drawing.PointF]::new(104, 92), $Typo)
 
-Draw-Tracked $G 'КОД · КОТИКИ · КРАСОТА' $tagFont ([System.Drawing.SolidBrush]::new($C.Muted)) 108 248 3 | Out-Null
+# --- розовая полоса (на месте прежней надписи) ---
+$barY = 244; $barX = 108; $barW = 520; $barH = 4
+Add-GlowRect $G $barX $barY $barW $barH $C.Pink 200 34 16
+$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($barX, $barY, $barW, $barH)) @($C.Pink, $C.Violet) 0), $barX, $barY, $barW, $barH)
 
-$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(108, 308, 520, 3)) @((Solid 0 $C.Pink), $C.Pink, $C.Violet) 0), 108, 308, 520, 2)
-
-$cx = 108
+# --- чипы (подняты выше) ---
+$cx = $barX
 foreach ($chip in @('full-stack', 'design', 'open source')) {
     $chipW = [int][Math]::Round((Measure-Tracked $G $chip $chipFont 2)) + 58
-    $rr = New-RoundRect $cx 342 $chipW 48 24
+    $rr = New-RoundRect $cx 292 $chipW 48 24
     $G.FillPath([System.Drawing.SolidBrush]::new((Solid 38 $C.Bg1)), $rr)
     $G.DrawPath([System.Drawing.Pen]::new((Solid 150 $C.Pink), 1.6), $rr)
-    Draw-Tracked $G $chip $chipFont ([System.Drawing.SolidBrush]::new($C.Text)) ($cx + 29) 355 2 | Out-Null
+    Draw-Tracked $G $chip $chipFont ([System.Drawing.SolidBrush]::new($C.Text)) ($cx + 29) 305 2 | Out-Null
     $cx += $chipW + 16
 }
 
-# моно-подпись справа снизу
-$signFont = [System.Drawing.Font]::new('Cascadia Mono SemiBold', 21, [System.Drawing.FontStyle]::Regular, [System.Drawing.GraphicsUnit]::Pixel)
-Draw-Tracked $G '~/22aroma $ ' $signFont ([System.Drawing.SolidBrush]::new((Solid 150 $C.Muted))) 1096 402 2 | Out-Null
-$G.FillRectangle([System.Drawing.SolidBrush]::new($C.Cyan), 1248, 400, 9, 20)
-
 # --- кот справа ---
 $cat  = [System.Drawing.Image]::FromFile((Join-Path $Assets 'cat.png'))
-$catS = 296; $catX = 1000; $catY = 87
-Add-Glow $G ($catX + $catS / 2) ($catY + $catS / 2) 265 $C.Pink 110
+$catS = 280; $catX = 1012; $catY = 58
+Add-Glow $G ($catX + $catS / 2) ($catY + $catS / 2) 250 $C.Pink 110
 $G.DrawImage($cat, $catX, $catY, $catS, $catS)
 $G.DrawEllipse([System.Drawing.Pen]::new((Solid 90 $C.Pink), 2), $catX, $catY, $catS, $catS)
 $G.DrawEllipse([System.Drawing.Pen]::new((Solid 45 ([System.Drawing.Color]::White)), 1), ($catX + 5), ($catY + 5), ($catS - 10), ($catS - 10))
 $cat.Dispose()
+
+# --- подпись ~/22aroma $ на тёмной плашке (заметно на любом фоне) ---
+$sigText = '~/22aroma $'
+$sigW = Measure-Text $sigText $signFont 2
+$pillW = [int]($sigW + 52); $pillH = 44; $pillX = ($W - 60 - $pillW); $pillY = 366
+$pill = New-RoundRect $pillX $pillY $pillW $pillH 22
+$G.FillPath([System.Drawing.SolidBrush]::new((Solid 215 $C.Bg1)), $pill)
+$G.DrawPath([System.Drawing.Pen]::new((Solid 110 $C.Pink), 1.4), $pill)
+Draw-Tracked $G $sigText $signFont ([System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)) ($pillX + 26) 378 2 | Out-Null
+$curX = $pillX + 26 + $sigW + 8
+$G.FillRectangle([System.Drawing.SolidBrush]::new($C.Cyan), $curX, 379, 9, 20)
 
 # угловые скобки
 $br = [System.Drawing.Pen]::new((Solid 70 $C.Pink), 2.2)
@@ -210,58 +251,72 @@ $G.DrawPath([System.Drawing.Pen]::new((Solid 44 ([System.Drawing.Color]::White))
 Save-Png $Bmp $G 'header.png'
 
 # =====================================================================
-#  3. Разделитель
+#  3. Разделитель: тонкая линия + кластер из трёх точек
 # =====================================================================
-New-Canvas 900 44
-$mid = 450
-Add-Glow $G $mid 22 46 $C.Pink 120
-$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $mid - 18, 2)) @((Solid 0 $C.Violet), $C.Violet) 0), 0, 21, $mid - 18, 2)
-$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($mid + 18, 0, $mid - 18, 2)) @($C.Cyan, (Solid 0 $C.Cyan)) 0), $mid + 18, 21, $mid - 18, 2)
-$diamond = [System.Drawing.Drawing2D.GraphicsPath]::new()
-$diamond.AddPolygon(@(
-    [System.Drawing.PointF]::new($mid - 9, 22), [System.Drawing.PointF]::new($mid, 13),
-    [System.Drawing.PointF]::new($mid + 9, 22), [System.Drawing.PointF]::new($mid, 31)))
-$G.FillPath([System.Drawing.SolidBrush]::new($C.Text), $diamond)
+Write-Host 'Разделитель'
+$DW = 560; $DH = 44; $midX = $DW / 2
+New-Canvas $DW $DH
+$lineY = 22
+$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $midX - 46, 2)) @((Solid 0 $C.Violet), $C.Violet) 0), 0, $lineY - 1, $midX - 46, 2)
+$G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($midX + 46, 0, $midX - 46, 2)) @($C.Pink, (Solid 0 $C.Pink)) 0), $midX + 46, $lineY - 1, $midX - 46, 2)
+
+$dots = @(@(-40, $C.Violet, 5), @(-20, $C.Pink, 7), @(0, $C.Cyan, 5))
+foreach ($d in $dots) {
+    $dx = $midX + $d[0]; $col = $d[1]; $r = $d[2]
+    Add-Glow $G $dx $lineY ($r * 3.4) $col 110
+    $G.FillEllipse([System.Drawing.SolidBrush]::new($col), ($dx - $r), ($lineY - $r), $r * 2, $r * 2)
+    $G.FillEllipse([System.Drawing.SolidBrush]::new([System.Drawing.Color]::White), ($dx - 2), ($lineY - 2), 4, 4)
+}
 Save-Png $Bmp $G 'divider.png'
 
 # =====================================================================
-#  4. Заголовки секций
+#  4. Заголовки секций: неоновая скобка + текст + уходящая в никуда линия
 # =====================================================================
 Write-Host 'Заголовки секций'
 $sections = [ordered]@{
-    'sec-about.png'    = @('ОБО МНЕ',    $C.Pink)
-    'sec-stack.png'    = @('СТЕК',       $C.Violet)
-    'sec-stats.png'    = @('СТАТИСТИКА', $C.Cyan)
-    'sec-projects.png' = @('ПРОЕКТЫ',    $C.Pink)
-    'sec-contact.png'  = @('КОНТАКТЫ',   $C.Violet)
+    'sec-about.png' = @('ОБО МНЕ', $C.Pink)
+    'sec-stack.png' = @('СТЕК',    $C.Violet)
 }
-$secFont = [System.Drawing.Font]::new('Segoe UI Semibold', 30, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$secFont  = [System.Drawing.Font]::new('Segoe UI Semibold', 34, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$secTrack = 8
 
 foreach ($name in $sections.Keys) {
     $text   = $sections[$name][0]
     $accent = $sections[$name][1]
-    $scratch = [System.Drawing.Bitmap]::new(8, 8)
-    $sg = [System.Drawing.Graphics]::FromImage($scratch)
-    $sg.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
-    $tw     = Measure-Tracked $sg $text $secFont 7
-    $sg.Dispose(); $scratch.Dispose()
-    $sh     = 80
-    $dotR   = 12
-    $textX  = 30 + $dotR * 2 + 34
-    $sw     = [int]($textX + $tw + 46)
+
+    # поля холста, чтобы свечение не обрезалось краями картинки
+    $padL = 46; $padR = 46; $padT = 36; $padB = 36
+    $barW = 9; $barH = 48; $gapBar = 24; $gapLine = 26; $lineW = 300
+    $contentH = 84
+
+    $tw = Measure-Text $text $secFont $secTrack
+    $sw = [int]($barW + $gapBar + $tw + $gapLine + $lineW + $padL + $padR)
+    $sh = $contentH + $padT + $padB
     New-Canvas $sw $sh
 
-    Add-Glow $G ($sw / 2) ($sh / 2) ($sw / 2) $accent 90
-    $pill = New-RoundRect 1 1 ($sw - 2) ($sh - 2) (($sh - 2) / 2)
-    $G.FillPath((New-MultiBrush ([System.Drawing.Rectangle]::new(0, 0, $sw, $sh)) @((Solid 235 $C.Bg3), (Solid 235 $C.Bg1)) 90), $pill)
-    $G.DrawPath([System.Drawing.Pen]::new((Solid 135 $accent), 1.8), $pill)
+    $barX = $padL
+    $barY = $padT + ($contentH - $barH) / 2
+    Add-GlowRect $G ($barX - 2) ($barY - 2) ($barW + 4) ($barH + 4) $accent 210 30 30
+    $bar = New-RoundRect $barX $barY $barW $barH 4.5
+    $G.FillPath((New-MultiBrush ([System.Drawing.Rectangle]::new($barX, $barY, $barW, $barH)) @($accent, (Solid 140 $C.Violet)) 90), $bar)
+    $G.FillRectangle([System.Drawing.SolidBrush]::new((Solid 210 ([System.Drawing.Color]::White))), ($barX + 1), ($barY + 7), 2, ($barH - 14))
 
-    $dcx = 30 + $dotR; $dcy = $sh / 2
-    Add-Glow $G $dcx $dcy 30 $accent 220
-    $G.FillEllipse([System.Drawing.SolidBrush]::new($accent), ($dcx - $dotR), ($dcy - $dotR), ($dotR * 2), ($dotR * 2))
-    $G.FillEllipse([System.Drawing.SolidBrush]::new([System.Drawing.Color]::White), ($dcx - 4), ($dcy - 4), 8, 8)
+    $textX = $barX + $barW + $gapBar
+    $textY = $padT + ($contentH - 46) / 2
+    $tb = New-MultiBrush ([System.Drawing.Rectangle]::new($textX, 0, $tw + 20, $sh)) @($C.Text, [System.Drawing.Color]::White, $accent) 0
+    Draw-Tracked $G $text $secFont $tb $textX $textY $secTrack | Out-Null
 
-    Draw-Tracked $G $text $secFont (New-MultiBrush ([System.Drawing.Rectangle]::new($textX, 0, $tw + 20, $sh)) @($C.Text, $accent) 0) $textX 21 7 | Out-Null
+    $lineX = $textX + $tw + $gapLine
+    $lineY2 = $padT + $contentH / 2
+    $G.FillRectangle((New-MultiBrush ([System.Drawing.Rectangle]::new($lineX, 0, $lineW, 2)) @($accent, (Solid 0 $accent)) 0), $lineX, ($lineY2 - 1), $lineW, 2)
+
+    $dia = [System.Drawing.Drawing2D.GraphicsPath]::new()
+    $dx = $lineX + $lineW
+    $dia.AddPolygon(@(
+        [System.Drawing.PointF]::new($dx - 5, $lineY2), [System.Drawing.PointF]::new($dx, $lineY2 - 5),
+        [System.Drawing.PointF]::new($dx + 5, $lineY2), [System.Drawing.PointF]::new($dx, $lineY2 + 5)))
+    $G.FillPath([System.Drawing.SolidBrush]::new((Solid 190 $accent)), $dia)
+
     Save-Png $Bmp $G $name
 }
 
